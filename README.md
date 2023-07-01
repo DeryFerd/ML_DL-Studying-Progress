@@ -18,7 +18,15 @@ This repository serves as a resource for learning and implementing Machine Learn
 
 ## Prerequisites
 
-To utilize the code and resources in this repository, you can use [Google Colaboratory](https://colab.research.google.com/), which provides a free online platform for running Jupyter notebooks with Python. This eliminates the need for local installations of Python and other software. The notebooks in this repository can be opened and executed directly on Google Colaboratory.
+To utilize the code and resources in this repository, you need to have the following software and libraries installed:
+
+- Python (version 3.6 or higher)
+- SQL Database Management System (e.g., MySQL, PostgreSQL, SQLite)
+- Jupyter Notebook or JupyterLab
+- Required Python libraries (NumPy, Pandas, Matplotlib, Seaborn, Scikit-learn, etc.)
+- Required SQL libraries (e.g., pymysql, psycopg2, sqlite3)
+
+If you dont have those softwares, just use [Google Colaboratory](https://colab.research.google.com/) instead.
 
 ## Project Structure
 
@@ -36,13 +44,27 @@ The repository is organized as follows:
 
 ## Installation
 
-Since this project can be run directly on Google Colaboratory, there is no need for local installations of software or libraries.
+To install the required libraries, you can use `pip` and run the following command:
+
+```bash
+pip install -r requirements.txt
+```
+
+Ensure that you have the required prerequisites installed before proceeding with the installation.
 
 ## Usage
 
-1. Clone this repository to your local machine or directly access it on [Google Colaboratory](https://colab.research.google.com/).
+1. Clone this repository to your local machine:
 
-2. Navigate to the project directory.
+```bash
+git clone https://github.com/your-username/your-repo.git
+```
+
+2. Navigate to the project directory:
+
+```bash
+cd your-repo
+```
 
 3. Explore the `notebooks/` directory to find various Jupyter notebooks with examples and tutorials on Machine Learning and Data Analysis using Python and SQL.
 

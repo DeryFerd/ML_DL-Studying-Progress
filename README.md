@@ -26,6 +26,8 @@ To utilize the code and resources in this repository, you need to have the follo
 - Required Python libraries (NumPy, Pandas, Matplotlib, Seaborn, Scikit-learn, etc.)
 - Required SQL libraries (e.g., pymysql, psycopg2, sqlite3)
 
+If you dont have those softwares in Python, just use Google Colaboratory instead. To utilize the code and resources in this repository, you can use Google Colaboratory 
+
 ## Project Structure
 
 The repository is organized as follows:

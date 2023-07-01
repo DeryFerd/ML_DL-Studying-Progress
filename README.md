@@ -1,4 +1,4 @@
-# Machine Learning Project Data Analysis with Python and SQL
+# Machine Learning and Data Analysis with Python and SQL
 
 This repository contains code and resources for Machine Learning and Data Analysis projects using Python and SQL. It also includes the implementation of interactive dashboards for visualizing the analyzed data.
 
@@ -18,15 +18,7 @@ This repository serves as a resource for learning and implementing Machine Learn
 
 ## Prerequisites
 
-To utilize the code and resources in this repository, you need to have the following software and libraries installed:
-
-- Python (version 3.6 or higher)
-- SQL Database Management System (e.g., MySQL, PostgreSQL, SQLite)
-- Jupyter Notebook or JupyterLab
-- Required Python libraries (NumPy, Pandas, Matplotlib, Seaborn, Scikit-learn, etc.)
-- Required SQL libraries (e.g., pymysql, psycopg2, sqlite3)
-
-If you dont have those softwares in Python, just use Google Colaboratory instead. To utilize the code and resources in this repository, you can use Google Colaboratory 
+To utilize the code and resources in this repository, you can use [Google Colaboratory](https://colab.research.google.com/), which provides a free online platform for running Jupyter notebooks with Python. This eliminates the need for local installations of Python and other software. The notebooks in this repository can be opened and executed directly on Google Colaboratory.
 
 ## Project Structure
 
@@ -44,27 +36,13 @@ The repository is organized as follows:
 
 ## Installation
 
-To install the required libraries, you can use `pip` and run the following command:
-
-```bash
-pip install -r requirements.txt
-```
-
-Ensure that you have the required prerequisites installed before proceeding with the installation.
+Since this project can be run directly on Google Colaboratory, there is no need for local installations of software or libraries.
 
 ## Usage
 
-1. Clone this repository to your local machine:
+1. Clone this repository to your local machine or directly access it on [Google Colaboratory](https://colab.research.google.com/).
 
-```bash
-git clone https://github.com/your-username/your-repo.git
-```
-
-2. Navigate to the project directory:
-
-```bash
-cd your-repo
-```
+2. Navigate to the project directory.
 
 3. Explore the `notebooks/` directory to find various Jupyter notebooks with examples and tutorials on Machine Learning and Data Analysis using Python and SQL.
 

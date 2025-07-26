@@ -104,7 +104,7 @@ st.set_page_config(page_title="Music Recommender", layout="wide", initial_sideba
 
 # --- LOAD DATA ---
 # Make sure to use the final, clean CSV file from your API enrichment script
-df = load_data('spotify-2023-final-with-genres.csv') 
+df = load_data('music-recommendations/spotify-2023-final-with-genres.csv') 
 
 # --- SIDEBAR ---
 with st.sidebar:

@@ -1,21 +1,24 @@
-%%writefile app.py
-
 import streamlit as st
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
 import plotly.express as px
 
-# --- DEFINISI FUNGSI ---
+# --- FUNCTION DEFINITIONS ---
 
 @st.cache_data
 def load_data(filepath):
+    """
+    Loads and prepares data from the clean CSV file.
+    """
     try:
         df = pd.read_csv(filepath)
     except FileNotFoundError:
-        st.error(f"File '{filepath}' tidak ditemukan.")
+        st.error(f"File '{filepath}' not found.")
+        st.info("Please ensure you have run the API enrichment script first.")
         return None
     
+    # Rename columns for consistency (good practice)
     df.rename(columns={
         'artist(s)_name': 'artists_name', 'danceability_%': 'danceability_pct',
         'valence_%': 'valence_pct', 'energy_%': 'energy_pct', 
@@ -23,11 +26,15 @@ def load_data(filepath):
         'liveness_%': 'liveness_pct', 'speechiness_%': 'speechiness_pct'
     }, inplace=True, errors='ignore')
 
+    # Standard data cleaning
     df['artist_genres'].fillna('', inplace=True)
     df.dropna(subset=['track_name', 'artists_name'], inplace=True)
     return df
 
 def calculate_similarity(df, genre_weight):
+    """
+    Calculates the similarity matrix based on a combination of audio and genre features.
+    """
     df_copy = df.copy()
     audio_features_list = ['danceability_pct', 'valence_pct', 'energy_pct', 'acousticness_pct', 'instrumentalness_pct', 'liveness_pct', 'speechiness_pct', 'bpm']
     
@@ -44,6 +51,9 @@ def calculate_similarity(df, genre_weight):
     return cosine_similarity(df_combined), df_copy.index
 
 def get_recommendations(song_title, df, similarity_matrix, valid_indices, num_recommendations=5):
+    """
+    Provides song recommendations based on the input song title.
+    """
     original_df_index = df.index[df['track_name'] == song_title].tolist()
     if not original_df_index:
         return pd.DataFrame()
@@ -61,10 +71,9 @@ def get_recommendations(song_title, df, similarity_matrix, valid_indices, num_re
     
     return df.loc[top_original_indices][['track_name', 'artists_name', 'released_year']]
 
-# --- FUNGSI CHART YANG DIPERBARUI ---
 def plot_radar_chart(df, selected_song):
     """
-    Membuat radar chart statis yang rapi.
+    Creates and displays a clean, non-interactive radar chart for the song's audio features.
     """
     audio_features_list = ['danceability_pct', 'valence_pct', 'energy_pct', 'acousticness_pct', 'instrumentalness_pct', 'liveness_pct', 'speechiness_pct']
     song_data = df.loc[df['track_name'] == selected_song, audio_features_list].iloc[0]
@@ -76,76 +85,92 @@ def plot_radar_chart(df, selected_song):
         theta=audio_features_list, 
         line_close=True,
         range_r=[0, 100],
-        title="Profil Audio Lagu"
+        title="Song Audio Profile"
     )
     fig.update_traces(fill='toself')
 
-    # --- PERBAIKAN TAMPILAN CHART ---
+    # --- Chart Layout Improvements ---
     fig.update_layout(
         font_size=14,
         margin=dict(l=80, r=80, t=100, b=80),
-        # --- PERBAIKAN DI SINI ---
-        # Matikan semua jenis drag pada layout utama
+        # Disable all dragging interactions on the layout
         dragmode=False 
     )
     return fig
 
 
-# --- UI STREAMLIT ---
+# --- STREAMLIT UI ---
 st.set_page_config(page_title="Music Recommender", layout="wide", initial_sidebar_state="expanded")
 
+# --- LOAD DATA ---
+# Make sure to use the final, clean CSV file from your API enrichment script
 df = load_data('spotify-2023-final-with-genres.csv') 
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.header("⚙️ Kontrol")
+    st.header("⚙️ Controls")
     if df is not None:
         song_list = sorted(df['track_name'].unique())
-        selected_song = st.selectbox("Pilih sebuah lagu:", options=song_list)
+        selected_song = st.selectbox("Select a song:", options=song_list)
         
         genre_weight = st.slider(
-            "Bobot Pengaruh Genre:",
+            "Genre Influence Weight:",
             min_value=0.0, max_value=1.0, value=0.5, step=0.1,
-            help="0.0: Murni kemiripan audio. 1.0: Sangat dipengaruhi genre."
+            help="0.0: Purely audio similarity. 1.0: Heavily influenced by genre."
         )
         
-        search_button = st.button("Dapatkan Rekomendasi")
+        search_button = st.button("Get Recommendations")
     else:
         selected_song = None
-        st.warning("Data tidak termuat.")
+        st.warning("Data could not be loaded.")
 
-# --- HALAMAN UTAMA ---
+# --- MAIN PAGE ---
 st.title("🎵 Music Recommender System")
 
 if df is not None and selected_song:
+    # Create columns for layout
     col1, col2 = st.columns([1, 2]) 
 
-    with col1: 
+    with col1: # Column for album art and chart
         song_details = df[df['track_name'] == selected_song].iloc[0]
         st.subheader(song_details['track_name'])
-        st.write(f"**Oleh:** *{song_details['artists_name']}*")
+        st.write(f"**By:** *{song_details['artists_name']}*")
 
+        # Display album art
         if pd.notna(song_details['album_art_url']):
             st.image(song_details['album_art_url'], use_container_width=True)
         
-        # Konfigurasi di sini memastikan tidak ada zoom scroll dan toolbar
+        # Display radar chart, disabling the mode bar and scroll-to-zoom
         st.plotly_chart(
             plot_radar_chart(df, selected_song), 
             use_container_width=True, 
             config={'displayModeBar': False, 'scrollZoom': False}
         )
 
-    with col2:
-        st.subheader("Rekomendasi")
-        st.write(f"**Genre:** {song_details['artist_genres'] if song_details['artist_genres'] else 'Tidak diketahui'}")
+    with col2: # Column for details and recommendations
+        st.subheader("Recommendations")
+        st.write(f"**Genre(s):** {song_details['artist_genres'] if song_details['artist_genres'] else 'Unknown'}")
         
         if search_button:
-            with st.spinner("Menganalisis kemiripan..."):
+            with st.spinner("Analyzing similarities..."):
                 similarity_matrix, valid_indices = calculate_similarity(df, genre_weight)
                 recommendations = get_recommendations(selected_song, df, similarity_matrix, valid_indices, num_recommendations=7)
                 
-                st.write("**Lagu lain yang mungkin kamu suka:**")
+                st.write("**Other songs you might like:**")
                 if not recommendations.empty:
                     st.dataframe(recommendations)
+                else:
+                    st.warning("Could not find any recommendations.")
 else:
-    st.error("Gagal memuat data. Pastikan nama file CSV sudah benar.")
+    st.error("Failed to load data. Please ensure the CSV file name is correct.")
+
+# --- FOOTER ---
+st.divider()
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <p>Created with <b>Streamlit</b> | An AI/ML Portfolio Project</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)

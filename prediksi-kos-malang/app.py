@@ -1,76 +1,87 @@
 import streamlit as st
 import pandas as pd
-import joblib
-import pickle
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 
 st.set_page_config(layout="wide", page_title="Analisis Harga Kos Malang")
 
+# --- FUNGSI UTAMA YANG MELAKUKAN SEMUANYA ---
 @st.cache_data
-def load_data_and_model():
-    # Tentukan path dasar (folder tempat app.py ini berada)
-    BASE_DIR = Path(__file__).resolve().parent
+def train_model_and_get_data():
+    # 1. Muat data mentah
+    df = pd.read_csv('data_kos_malang_bersih.csv')
+    df['Fasilitas'] = df['Fasilitas'].fillna('')
 
-    # Buat path lengkap untuk setiap file
-    CSV_PATH = BASE_DIR / "data_kos_malang_bersih.csv"
-    MODEL_PATH = BASE_DIR / "model_prediksi_harga_kos.pkl"
-    COLUMNS_PATH = BASE_DIR / "training_columns.pkl"
+    # 2. Lakukan Feature Engineering
+    fasilitas_dummies = df['Fasilitas'].str.get_dummies(sep=r'\s*,\s*')
+    if '' in fasilitas_dummies.columns:
+        fasilitas_dummies = fasilitas_dummies.drop(columns=[''])
+    fasilitas_dummies.columns = fasilitas_dummies.columns.str.strip()
+    fasilitas_dummies = fasilitas_dummies.groupby(level=0, axis=1).sum()
+    fasilitas_dummies = fasilitas_dummies.add_prefix('Fasilitas_')
+    df_engineered = pd.concat([df, fasilitas_dummies], axis=1)
 
-    # Muat semua file menggunakan path yang sudah pasti benar
-    df = pd.read_csv(CSV_PATH)
-    model = joblib.load(MODEL_PATH)
-    with open(COLUMNS_PATH, 'rb') as f:
-        training_columns = pickle.load(f)
+    # 3. Siapkan data untuk training
+    categorical_features = ['Lokasi', 'Tipe']
+    numerical_features = list(fasilitas_dummies.columns)
+    features = categorical_features + numerical_features
+    target = 'Harga per Bulan'
 
-df, model, training_columns = load_data_and_model()
+    X = df_engineered[features]
+    y = df_engineered[target]
 
+    # 4. Definisikan preprocessor dan model pipeline
+    preprocessor = ColumnTransformer(
+        transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)],
+        remainder='passthrough'
+    )
+    model = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
+    ])
+
+    # 5. Latih model dengan SEMUA data
+    model.fit(X, y)
+    
+    return df, model, features
+
+# Jalankan fungsi utama (hanya akan berjalan sekali berkat cache)
+df, model, training_columns = train_model_and_get_data()
+
+# --- Sisa aplikasi sama persis ---
 st.sidebar.title("Navigasi")
 page = st.sidebar.radio("Pilih Halaman", ["🏠 Analisis Pasar", "🧮 Kalkulator Harga"])
 
-# ======================================================================
-# HALAMAN 1: ANALISIS PASAR (KODE LENGKAP)
-# ======================================================================
 if page == "🏠 Analisis Pasar":
+    # ... (Bagian EDA tidak berubah) ...
     st.title("🏠 Analisis Pasar Kos di Malang")
-    st.markdown(f"Hasil analisis dari **{len(df)}** data kos unik yang berhasil di-scrape dan dibersihkan.")
-
+    st.markdown(f"Hasil analisis dari **{len(df)}** data kos unik.")
     col1, col2, col3 = st.columns(3)
     col1.metric("Harga Rata-rata", f"Rp {int(df['Harga per Bulan'].mean()):,}")
     col2.metric("Harga Termurah", f"Rp {int(df['Harga per Bulan'].min()):,}")
     col3.metric("Harga Termahal", f"Rp {int(df['Harga per Bulan'].max()):,}")
-    
     st.divider()
-
     fig_col1, fig_col2 = st.columns(2)
-
     with fig_col1:
         st.subheader("Rata-rata Harga per Kecamatan")
         harga_per_lokasi = df.groupby('Lokasi')['Harga per Bulan'].mean().sort_values(ascending=True)
-        fig1, ax1 = plt.subplots(figsize=(8, 6))
-        sns.barplot(x=harga_per_lokasi.values, y=harga_per_lokasi.index, ax=ax1, palette='viridis')
-        ax1.set_xlabel("Rata-rata Harga")
-        ax1.set_ylabel("Kecamatan")
-        st.pyplot(fig1)
-
+        fig, ax = plt.subplots()
+        sns.barplot(x=harga_per_lokasi.values, y=harga_per_lokasi.index, ax=ax, palette='viridis')
+        st.pyplot(fig)
     with fig_col2:
         st.subheader("Jumlah Kos per Tipe")
-        fig2, ax2 = plt.subplots(figsize=(8, 6))
-        sns.countplot(y=df['Tipe'], order=df['Tipe'].value_counts().index, ax=ax2, palette='plasma')
-        ax2.set_xlabel("Jumlah Kos")
-        ax2.set_ylabel("Tipe")
-        st.pyplot(fig2)
-
+        fig, ax = plt.subplots()
+        sns.countplot(y=df['Tipe'], order=df['Tipe'].value_counts().index, ax=ax, palette='plasma')
+        st.pyplot(fig)
     st.subheader("Lihat Semua Data")
     st.dataframe(df)
 
-# ======================================================================
-# HALAMAN 2: KALKULATOR HARGA (KODE LENGKAP)
-# ======================================================================
 elif page == "🧮 Kalkulator Harga":
     st.title("🧮 Kalkulator Estimasi Harga Kos")
-    st.markdown("Masukkan spesifikasi kos untuk mendapatkan prediksi harga dari model Machine Learning kami.")
     
     lokasi_list = sorted(df['Lokasi'].unique())
     tipe_list = sorted(df['Tipe'].unique())
@@ -94,5 +105,4 @@ elif page == "🧮 Kalkulator Harga":
                     input_df.loc[0, col_name] = 1
             
             prediksi = model.predict(input_df)[0]
-            
             st.success(f"Estimasi Harga Kos per Bulan: **Rp {int(prediksi):,}**")

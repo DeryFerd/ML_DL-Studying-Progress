@@ -59,7 +59,7 @@ df, model, training_columns = train_model_and_get_data()
 
 # --- Sisa aplikasi sama persis ---
 st.sidebar.title("Navigasi")
-page = st.sidebar.radio("Pilih Halaman", ["🏠 Analisis Pasar", "🧮 Kalkulator Harga"])
+page = st.sidebar.radio("Pilih Halaman", ["🏠 Analisis Pasar", "🧮 Kalkulator Harga", "🧠 Analisis Model"])
 
 if page == "🏠 Analisis Pasar":
     st.title("🏠 Analisis Pasar Kos di Malang")
@@ -110,3 +110,33 @@ elif page == "🧮 Kalkulator Harga":
             
             prediksi = model.predict(input_df)[0]
             st.success(f"Estimasi Harga Kos per Bulan: **Rp {int(prediksi):,}**")
+
+# --- HALAMAN BARU: ANALISIS MODEL ---
+elif page == "🧠 Analisis Model":
+    st.title("🧠 Analisis Model Machine Learning")
+    st.markdown("Fitur apa yang dianggap paling penting oleh model dalam memprediksi harga?")
+
+    # Ambil nama fitur setelah di-encode oleh preprocessor
+    feature_names = model.named_steps['preprocessor'].get_feature_names_out()
+    
+    # Ambil nilai importance dari regressor
+    importances = model.named_steps['regressor'].feature_importances_
+
+    # Buat DataFrame
+    feature_importance_df = pd.DataFrame({
+        'Fitur': feature_names,
+        'Pentingnya': importances
+    }).sort_values(by='Pentingnya', ascending=False)
+
+    st.subheader("Tingkat Kepentingan Fitur")
+    
+    # Tampilkan 15 fitur paling penting
+    top_features = feature_importance_df.head(15)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.barplot(x='Pentingnya', y='Fitur', data=top_features, palette='rocket', ax=ax)
+    ax.set_title("Top 15 Fitur Paling Berpengaruh")
+    st.pyplot(fig)
+
+    with st.expander("Lihat semua tingkat kepentingan fitur"):
+        st.dataframe(feature_importance_df)

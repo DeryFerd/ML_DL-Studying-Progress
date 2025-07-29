@@ -1,3 +1,4 @@
+%%writefile app.py
 import streamlit as st
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -6,17 +7,22 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path # <-- Tambahkan ini
 
 st.set_page_config(layout="wide", page_title="Analisis Harga Kos Malang")
 
 # --- FUNGSI UTAMA YANG MELAKUKAN SEMUANYA ---
 @st.cache_data
 def train_model_and_get_data():
-    # 1. Muat data mentah
-    df = pd.read_csv('data_kos_malang_bersih.csv')
+    # --- BAGIAN PATH YANG DIPERBAIKI ---
+    BASE_DIR = Path(__file__).resolve().parent
+    CSV_PATH = BASE_DIR / "data_kos_malang_bersih.csv"
+    df = pd.read_csv(CSV_PATH)
+    # -----------------------------------
+    
     df['Fasilitas'] = df['Fasilitas'].fillna('')
 
-    # 2. Lakukan Feature Engineering
+    # Lakukan Feature Engineering
     fasilitas_dummies = df['Fasilitas'].str.get_dummies(sep=r'\s*,\s*')
     if '' in fasilitas_dummies.columns:
         fasilitas_dummies = fasilitas_dummies.drop(columns=[''])
@@ -25,7 +31,7 @@ def train_model_and_get_data():
     fasilitas_dummies = fasilitas_dummies.add_prefix('Fasilitas_')
     df_engineered = pd.concat([df, fasilitas_dummies], axis=1)
 
-    # 3. Siapkan data untuk training
+    # Siapkan data untuk training
     categorical_features = ['Lokasi', 'Tipe']
     numerical_features = list(fasilitas_dummies.columns)
     features = categorical_features + numerical_features
@@ -34,7 +40,7 @@ def train_model_and_get_data():
     X = df_engineered[features]
     y = df_engineered[target]
 
-    # 4. Definisikan preprocessor dan model pipeline
+    # Definisikan preprocessor dan model pipeline
     preprocessor = ColumnTransformer(
         transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)],
         remainder='passthrough'
@@ -44,12 +50,12 @@ def train_model_and_get_data():
         ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
     ])
 
-    # 5. Latih model dengan SEMUA data
+    # Latih model dengan SEMUA data
     model.fit(X, y)
     
     return df, model, features
 
-# Jalankan fungsi utama (hanya akan berjalan sekali berkat cache)
+# Jalankan fungsi utama
 df, model, training_columns = train_model_and_get_data()
 
 # --- Sisa aplikasi sama persis ---
@@ -57,7 +63,6 @@ st.sidebar.title("Navigasi")
 page = st.sidebar.radio("Pilih Halaman", ["🏠 Analisis Pasar", "🧮 Kalkulator Harga"])
 
 if page == "🏠 Analisis Pasar":
-    # ... (Bagian EDA tidak berubah) ...
     st.title("🏠 Analisis Pasar Kos di Malang")
     st.markdown(f"Hasil analisis dari **{len(df)}** data kos unik.")
     col1, col2, col3 = st.columns(3)

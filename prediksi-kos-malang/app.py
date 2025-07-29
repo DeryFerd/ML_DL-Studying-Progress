@@ -120,26 +120,29 @@ elif page == "🧠 Analisis Model":
     st.title("🧠 Analisis Model Machine Learning")
     st.markdown("Fitur apa yang dianggap paling penting oleh model dalam memprediksi harga?")
 
-    # Ambil nama fitur setelah di-encode oleh preprocessor
-    feature_names = model.named_steps['preprocessor'].get_feature_names_out()
-    
-    # Ambil nilai importance dari regressor
+    feature_names_raw = model.named_steps['preprocessor'].get_feature_names_out()
     importances = model.named_steps['regressor'].feature_importances_
 
-    # Buat DataFrame
+    # --- PERBAIKAN 1: MEMBERSIHKAN NAMA FITUR ---
+    cleaned_names = []
+    for name in feature_names_raw:
+        if 'remainder__' in name:
+            clean_name = name.split('__')[1]
+        elif 'cat__' in name:
+            clean_name = name.split('__')[1].replace('_', ' = ')
+        else:
+            clean_name = name
+        cleaned_names.append(clean_name)
+    # -------------------------------------------
+
     feature_importance_df = pd.DataFrame({
-        'Fitur': feature_names,
+        'Fitur': cleaned_names, # Gunakan nama yang sudah bersih
         'Pentingnya': importances
-    }).sort_values(by='Pentingnya', ascending=False)
+    }).sort_values(by='Pentingnya', ascending=False).head(15)
 
-    st.subheader("Tingkat Kepentingan Fitur")
-    
-    # Tampilkan 15 fitur paling penting
-    top_features = feature_importance_df.head(15)
-
+    st.subheader("Top 15 Fitur Paling Berpengaruh")
     fig, ax = plt.subplots(figsize=(10, 8))
-    sns.barplot(x='Pentingnya', y='Fitur', data=top_features, palette='rocket', ax=ax)
-    ax.set_title("Top 15 Fitur Paling Berpengaruh")
+    sns.barplot(x='Pentingnya', y='Fitur', data=feature_importance_df, palette='rocket', ax=ax)
     st.pyplot(fig)
 
     with st.expander("Lihat semua tingkat kepentingan fitur"):

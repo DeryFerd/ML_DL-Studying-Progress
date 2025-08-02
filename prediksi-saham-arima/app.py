@@ -4,6 +4,14 @@ import pandas as pd
 import plotly.graph_objects as go
 import io
 
+# =======================================================================
+# --- IMPORT YANG HILANG SAYA TAMBAHKAN KEMBALI DI SINI ---
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.arima.model import ARIMA
+import matplotlib.pyplot as plt
+# =======================================================================
+
 st.set_page_config(page_title="ARIMA Stock Forecaster", page_icon="📈", layout="wide")
 
 @st.cache_data(ttl=3600)
@@ -11,7 +19,7 @@ def load_data(ticker):
     data = yf.download(tickers=[ticker], start='2020-01-01', end=pd.to_datetime('today').strftime('%Y-%m-%d'))
     if data.empty:
         return None
-    data = data.reset_index() # Jadikan 'Date' kolom biasa
+    data = data.reset_index()
     return data
 
 with st.sidebar:
@@ -37,24 +45,15 @@ else:
     if data_df is None or data_df.empty:
         st.error(f'Ticker "{ticker_input}" tidak ditemukan.')
     else:
-        # Debugging
-        with st.expander("Lihat Data Mentah"):
-            st.dataframe(data_df.head())
-            buffer = io.StringIO()
-            data_df.info(buf=buffer)
-            st.text(buffer.getvalue())
-
-        # =======================================================================
-        # PERUBAHAN KUNCI: Plot dengan 'Date' sebagai string
+        # Plot historis
         fig_hist = go.Figure()
         fig_hist.add_trace(go.Scatter(x=data_df['Date'].astype(str), y=data_df['Close'], name='Harga Penutupan Historis', mode='lines'))
         fig_hist.update_layout(title=f'Data Harga Saham Historis', xaxis_title='Tanggal', yaxis_title='Harga')
         st.plotly_chart(fig_hist, use_container_width=True)
-        # =======================================================================
 
         with st.expander("Lihat Analisis Diagnostik Awal"):
             adf_result = adfuller(data_df['Close'].dropna())
-            st.write(f'**Hasil Uji ADF:** P-value = `{adf_result()[1]:.4f}`')
+            st.write(f'**Hasil Uji ADF:** P-value = `{adf_result[1]:.4f}`')
             col1, col2 = st.columns(2)
             with col1:
                 fig_acf, ax_acf = plt.subplots(figsize=(6,3))
@@ -79,6 +78,9 @@ else:
                     forecast_df = forecast_result.summary_frame(alpha=0.05)
                     
                     fig_fc = go.Figure()
+                    # Plot historis dalam forecast
+                    fig_fc.add_trace(go.Scatter(x=df_train.index.astype(str), y=df_train, name='Data Historis', mode='lines'))
+                    # Plot forecast
                     fig_fc.add_trace(go.Scatter(x=forecast_df.index.astype(str), y=forecast_df['mean'], name='Forecast', line=dict(color='red', dash='dash')))
                     fig_fc.add_trace(go.Scatter(x=forecast_df.index.astype(str), y=forecast_df['mean_ci_upper'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Batas Atas'))
                     fig_fc.add_trace(go.Scatter(x=forecast_df.index.astype(str), y=forecast_df['mean_ci_lower'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Batas Bawah'))

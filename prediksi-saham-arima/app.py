@@ -1,11 +1,10 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
-import matplotlib.pyplot as plt
 import io
 
 st.set_page_config(page_title="ARIMA Stock Forecaster", page_icon="📈", layout="wide")
@@ -15,15 +14,7 @@ def load_data(ticker):
     data = yf.download(tickers=[ticker], start='2020-01-01', end=pd.to_datetime('today').strftime('%Y-%m-%d'))
     if data.empty:
         return None
-    
-    # =======================================================================
-    # PERUBAHAN PALING KRUSIAL: Membuat index tanggal menjadi teratur
-    # Resample ke frekuensi harian kerja (Senin-Jumat)
-    data = data.asfreq('B')
-    # Isi hari libur (yang sekarang menjadi NaN) dengan data hari sebelumnya
-    data.fillna(method='ffill', inplace=True)
-    # =======================================================================
-    
+    data = data.asfreq('B').fillna(method='ffill')
     return data
 
 with st.sidebar:
@@ -51,11 +42,17 @@ else:
     else:
         data_close = data_df['Close']
         
-        # PERBAIKAN PLOT: Hapus .astype(str), gunakan index datetime yang sudah bersih
-        fig_hist = go.Figure()
-        fig_hist.add_trace(go.Scatter(x=data_close.index, y=data_close, name='Harga Penutupan Historis', mode='lines'))
-        fig_hist.update_layout(title=f'Data Harga Saham Historis', xaxis_title='Tanggal', yaxis_title='Harga')
-        st.plotly_chart(fig_hist, use_container_width=True)
+        # =======================================================================
+        # PLOT HISTORIS MENGGUNAKAN MATPLOTLIB
+        st.subheader('Data Harga Saham Historis')
+        fig_hist, ax_hist = plt.subplots(figsize=(12, 6))
+        ax_hist.plot(data_close.index, data_close, label='Harga Penutupan Historis')
+        ax_hist.set_xlabel('Tanggal')
+        ax_hist.set_ylabel('Harga')
+        ax_hist.legend()
+        ax_hist.grid(True)
+        st.pyplot(fig_hist)
+        # =======================================================================
 
         with st.expander("Lihat Analisis Diagnostik Awal"):
             adf_result = adfuller(data_close.dropna())
@@ -83,13 +80,22 @@ else:
                     forecast_result = results.get_forecast(steps=forecast_days)
                     forecast_df = forecast_result.summary_frame(alpha=0.05)
                     
-                    fig_fc = go.Figure()
-                    fig_fc.add_trace(go.Scatter(x=df_train.index, y=df_train, name='Data Historis', mode='lines'))
-                    fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean'], name='Forecast', line=dict(color='red', dash='dash')))
-                    fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_upper'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Batas Atas'))
-                    fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_lower'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Batas Bawah'))
-                    fig_fc.update_layout(title=f'Forecast Harga Saham', xaxis_title='Tanggal', yaxis_title='Harga')
-                    st.plotly_chart(fig_fc, use_container_width=True)
+                    # =======================================================================
+                    # PLOT FORECAST MENGGUNAKAN MATPLOTLIB
+                    fig_fc, ax_fc = plt.subplots(figsize=(12, 6))
+                    ax_fc.plot(df_train.index, df_train, label='Data Historis')
+                    ax_fc.plot(forecast_df.index, forecast_df['mean'], color='red', linestyle='--', label='Forecast')
+                    ax_fc.fill_between(forecast_df.index, 
+                                     forecast_df['mean_ci_lower'], 
+                                     forecast_df['mean_ci_upper'], 
+                                     color='pink', alpha=0.5, label='Batas Atas & Bawah (95%)')
+                    ax_fc.set_title(f'Forecast Harga Saham')
+                    ax_fc.set_xlabel('Tanggal')
+                    ax_fc.set_ylabel('Harga')
+                    ax_fc.legend()
+                    ax_fc.grid(True)
+                    st.pyplot(fig_fc)
+                    # =======================================================================
 
                 except Exception as e:
                     st.error(f"Gagal melatih model: {e}")

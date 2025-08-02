@@ -43,15 +43,9 @@ else:
         data_close = data_df['Close']
         
         # =======================================================================
-        # PLOT HISTORIS MENGGUNAKAN MATPLOTLIB
+        # PERUBAHAN DI SINI: Kembali menggunakan st.line_chart
         st.subheader('Data Harga Saham Historis')
-        fig_hist, ax_hist = plt.subplots(figsize=(12, 6))
-        ax_hist.plot(data_close.index, data_close, label='Harga Penutupan Historis')
-        ax_hist.set_xlabel('Tanggal')
-        ax_hist.set_ylabel('Harga')
-        ax_hist.legend()
-        ax_hist.grid(True)
-        st.pyplot(fig_hist)
+        st.line_chart(data_close)
         # =======================================================================
 
         with st.expander("Lihat Analisis Diagnostik Awal"):
@@ -80,8 +74,7 @@ else:
                     forecast_result = results.get_forecast(steps=forecast_days)
                     forecast_df = forecast_result.summary_frame(alpha=0.05)
                     
-                    # =======================================================================
-                    # PLOT FORECAST MENGGUNAKAN MATPLOTLIB
+                    # Plot forecast masih menggunakan matplotlib agar tidak error
                     fig_fc, ax_fc = plt.subplots(figsize=(12, 6))
                     ax_fc.plot(df_train.index, df_train, label='Data Historis')
                     ax_fc.plot(forecast_df.index, forecast_df['mean'], color='red', linestyle='--', label='Forecast')
@@ -95,7 +88,6 @@ else:
                     ax_fc.legend()
                     ax_fc.grid(True)
                     st.pyplot(fig_fc)
-                    # =======================================================================
 
                 except Exception as e:
                     st.error(f"Gagal melatih model: {e}")

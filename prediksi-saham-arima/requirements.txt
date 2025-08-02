@@ -1,4 +1,8 @@
+# Build dependencies, install these first!
 numpy
+cython
+
+# The rest of the app's dependencies
 scipy
 statsmodels
 pmdarima

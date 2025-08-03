@@ -62,7 +62,6 @@ else:
             st.line_chart(data_close)
 
         with st.expander("View Initial Diagnostic Analysis"):
-            # ... (kode diagnostik tidak berubah)
             adf_result = adfuller(data_close.dropna())
             st.write(f'**ADF Test Result:** P-value = `{adf_result[1]:.4f}`')
             if adf_result[1] > 0.05:
@@ -91,7 +90,6 @@ else:
                     st.subheader('Model Results & Forecast')
 
                     with st.expander("View Model Validation Details", expanded=True):
-                        # ... (kode validasi tidak berubah)
                         summary_html = results.summary().as_html()
                         st.markdown(summary_html, unsafe_allow_html=True)
                         st.markdown("---")
@@ -113,8 +111,6 @@ else:
                     
                     st.subheader('Forecast Plot')
                     
-                    # =======================================================================
-                    # --- LOGIKA KONDISIONAL UNTUK PLOT FORECAST ---
                     if is_indonesian_stock:
                         st.caption("Plotting with Matplotlib for IDX stock compatibility.")
                         fig_fc, ax_fc = plt.subplots(figsize=(12, 6))
@@ -131,15 +127,19 @@ else:
                         ax_fc.grid(True)
                         st.pyplot(fig_fc)
                     else:
-                        st.caption("Plotting with Plotly for interactive view.")
-                        fig_fc = go.Figure()
-                        fig_fc.add_trace(go.Scatter(x=df_train.index, y=df_train, name='Historical Data', mode='lines'))
-                        fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean'], name='Forecast', line=dict(color='red', dash='dash')))
-                        fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_upper'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Upper Bound'))
-                        fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_lower'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Lower Bound'))
-                        fig_fc.update_layout(title=f'Stock Price Forecast', xaxis_title='Date', yaxis_title='Price')
-                        st.plotly_chart(fig_fc, use_container_width=True)
-                    # =======================================================================
+                        # =======================================================================
+                        # --- MENGGANTI PLOTLY DENGAN st.line_chart UNTUK FORECAST ---
+                        st.caption("Plotting with st.line_chart for interactive view.")
+                        
+                        # Gabungkan data historis dan forecast untuk plotting
+                        plot_df = pd.concat([df_train.rename('Historical'), 
+                                           forecast_df['mean'].rename('Forecast'),
+                                           forecast_df['mean_ci_upper'].rename('Upper Bound'),
+                                           forecast_df['mean_ci_lower'].rename('Lower Bound')],
+                                          axis=1)
+                        
+                        st.line_chart(plot_df)
+                        # =======================================================================
 
                 except Exception as e:
                     st.error(f"Failed to train model: {e}")

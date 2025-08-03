@@ -90,14 +90,9 @@ else:
                     st.subheader('Model Results & Forecast')
 
                     with st.expander("View Model Validation Details", expanded=True):
-                        # =======================================================================
-                        # --- PERUBAHAN DI SINI UNTUK MERAPIKAN TABEL ---
-                        # Mengubah summary menjadi tabel HTML yang rapi
                         summary_html = results.summary().as_html()
                         st.markdown(summary_html, unsafe_allow_html=True)
-                        # =======================================================================
-                        
-                        st.markdown("---") # Pemisah
+                        st.markdown("---")
                         
                         param_p_values = results.pvalues.drop('const', errors='ignore')
                         if (param_p_values > 0.05).any():
@@ -113,6 +108,13 @@ else:
                             st.error('❌ Residuals Are Not White Noise: Autocorrelation patterns still exist in the residuals.')
                         else:
                             st.success('✅ Residuals Are White Noise.')
+                    
+                    # =======================================================================
+                    # --- KODE YANG HILANG SAYA KEMBALIKAN DI SINI ---
+                    # Membuat DataFrame untuk forecast
+                    forecast_result = results.get_forecast(steps=forecast_days)
+                    forecast_df = forecast_result.summary_frame(alpha=0.05)
+                    # =======================================================================
                     
                     st.subheader('Forecast Plot')
                     fig_fc, ax_fc = plt.subplots(figsize=(12, 6))

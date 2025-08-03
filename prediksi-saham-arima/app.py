@@ -62,6 +62,7 @@ else:
             st.line_chart(data_close)
 
         with st.expander("View Initial Diagnostic Analysis"):
+            # ... (kode diagnostik tidak berubah)
             adf_result = adfuller(data_close.dropna())
             st.write(f'**ADF Test Result:** P-value = `{adf_result[1]:.4f}`')
             if adf_result[1] > 0.05:
@@ -90,46 +91,55 @@ else:
                     st.subheader('Model Results & Forecast')
 
                     with st.expander("View Model Validation Details", expanded=True):
+                        # ... (kode validasi tidak berubah)
                         summary_html = results.summary().as_html()
                         st.markdown(summary_html, unsafe_allow_html=True)
                         st.markdown("---")
-                        
                         param_p_values = results.pvalues.drop('const', errors='ignore')
                         if (param_p_values > 0.05).any():
-                            st.error('❌ Parameter Significance Warning: One or more AR/MA parameters are not statistically significant (p-value > 0.05).')
+                            st.error('❌ Parameter Significance Warning...')
                         else:
                             st.success('✅ Parameter Significance OK.')
-
                         lb_test = acorr_ljungbox(results.resid, lags=[10], return_df=True)
                         lb_p_value = lb_test['lb_pvalue'].iloc[0]
-                        
                         st.write(f'**Ljung-Box Test on Residuals:** P-value = `{lb_p_value:.4f}`')
                         if lb_p_value < 0.05:
-                            st.error('❌ Residuals Are Not White Noise: Autocorrelation patterns still exist in the residuals.')
+                            st.error('❌ Residuals Are Not White Noise...')
                         else:
                             st.success('✅ Residuals Are White Noise.')
                     
-                    # =======================================================================
-                    # --- KODE YANG HILANG SAYA KEMBALIKAN DI SINI ---
-                    # Membuat DataFrame untuk forecast
                     forecast_result = results.get_forecast(steps=forecast_days)
                     forecast_df = forecast_result.summary_frame(alpha=0.05)
-                    # =======================================================================
                     
                     st.subheader('Forecast Plot')
-                    fig_fc, ax_fc = plt.subplots(figsize=(12, 6))
-                    ax_fc.plot(df_train.index, df_train, label='Historical Data')
-                    ax_fc.plot(forecast_df.index, forecast_df['mean'], color='red', linestyle='--', label='Forecast')
-                    ax_fc.fill_between(forecast_df.index, 
-                                     forecast_df['mean_ci_lower'], 
-                                     forecast_df['mean_ci_upper'], 
-                                     color='pink', alpha=0.5, label='95% Confidence Interval')
-                    ax_fc.set_title(f'Stock Price Forecast')
-                    ax_fc.set_xlabel('Date')
-                    ax_fc.set_ylabel('Price')
-                    ax_fc.legend()
-                    ax_fc.grid(True)
-                    st.pyplot(fig_fc)
+                    
+                    # =======================================================================
+                    # --- LOGIKA KONDISIONAL UNTUK PLOT FORECAST ---
+                    if is_indonesian_stock:
+                        st.caption("Plotting with Matplotlib for IDX stock compatibility.")
+                        fig_fc, ax_fc = plt.subplots(figsize=(12, 6))
+                        ax_fc.plot(df_train.index, df_train, label='Historical Data')
+                        ax_fc.plot(forecast_df.index, forecast_df['mean'], color='red', linestyle='--', label='Forecast')
+                        ax_fc.fill_between(forecast_df.index, 
+                                         forecast_df['mean_ci_lower'], 
+                                         forecast_df['mean_ci_upper'], 
+                                         color='pink', alpha=0.5, label='95% Confidence Interval')
+                        ax_fc.set_title(f'Stock Price Forecast')
+                        ax_fc.set_xlabel('Date')
+                        ax_fc.set_ylabel('Price')
+                        ax_fc.legend()
+                        ax_fc.grid(True)
+                        st.pyplot(fig_fc)
+                    else:
+                        st.caption("Plotting with Plotly for interactive view.")
+                        fig_fc = go.Figure()
+                        fig_fc.add_trace(go.Scatter(x=df_train.index, y=df_train, name='Historical Data', mode='lines'))
+                        fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean'], name='Forecast', line=dict(color='red', dash='dash')))
+                        fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_upper'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Upper Bound'))
+                        fig_fc.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_lower'], fill='tonexty', fillcolor='rgba(255,0,0,0.15)', line=dict(color='rgba(255,255,255,0)'), name='Lower Bound'))
+                        fig_fc.update_layout(title=f'Stock Price Forecast', xaxis_title='Date', yaxis_title='Price')
+                        st.plotly_chart(fig_fc, use_container_width=True)
+                    # =======================================================================
 
                 except Exception as e:
                     st.error(f"Failed to train model: {e}")

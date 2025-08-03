@@ -43,7 +43,7 @@ else:
     if data_df is None or data_df.empty:
         st.error(f'Ticker "{ticker_input}" not found.')
     else:
-        data_close = data_df['Close']
+        data_close = data_df['Close'].squeeze()
         
         st.subheader('Historical Stock Price Data')
         

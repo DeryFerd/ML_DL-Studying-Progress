@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.stats.diagnostic import acorr_ljungbox
 import io
 
 st.set_page_config(page_title="ARIMA Stock Forecaster", page_icon="📈", layout="wide")
@@ -45,12 +46,9 @@ else:
         
         st.subheader('Historical Stock Price Data')
         
-        # =======================================================================
-        # --- LOGIKA KONDISIONAL UNTUK PLOTTING ---
         is_indonesian_stock = ticker_input.upper().endswith('.JK')
 
         if is_indonesian_stock:
-            # Jika saham Indonesia, gunakan Matplotlib yang andal
             st.caption("Plotting with Matplotlib for IDX stock compatibility.")
             fig_hist, ax_hist = plt.subplots(figsize=(12, 6))
             ax_hist.plot(data_close.index, data_close, label='Historical Price')
@@ -60,15 +58,17 @@ else:
             ax_hist.grid(True)
             st.pyplot(fig_hist)
         else:
-            # Jika saham luar, gunakan st.line_chart yang interaktif
             st.caption("Plotting with st.line_chart for interactive view.")
             st.line_chart(data_close)
-        # =======================================================================
 
         with st.expander("View Initial Diagnostic Analysis"):
             adf_result = adfuller(data_close.dropna())
             st.write(f'**ADF Test Result:** P-value = `{adf_result[1]:.4f}`')
-            # (Kode diagnostik lainnya tetap sama...)
+            if adf_result[1] > 0.05:
+                st.warning('⚠️ Data is likely non-stationary. Consider using `d > 0`.')
+            else:
+                st.success('✅ Data is likely stationary. You might be able to use `d = 0`.')
+
             col1, col2 = st.columns(2)
             with col1:
                 fig_acf, ax_acf = plt.subplots(figsize=(6,3))
@@ -88,13 +88,31 @@ else:
                     
                     st.markdown("---")
                     st.subheader('Model Results & Forecast')
-                    # (Validasi model tetap sama...)
+
+                    # =======================================================================
+                    # --- BAGIAN PERINGATAN DAN VALIDASI YANG DIKEMBALIKAN ---
+                    with st.expander("View Model Validation Details"):
+                        st.text(str(results.summary()))
+                        
+                        param_p_values = results.pvalues.drop('const', errors='ignore')
+                        if (param_p_values > 0.05).any():
+                            st.error('❌ Parameter Significance Warning: One or more AR/MA parameters are not statistically significant (p-value > 0.05).')
+                        else:
+                            st.success('✅ Parameter Significance OK.')
+
+                        lb_test = acorr_ljungbox(results.resid, lags=[10], return_df=True)
+                        lb_p_value = lb_test['lb_pvalue'].iloc[0]
+                        
+                        st.write(f'**Ljung-Box Test on Residuals:** P-value = `{lb_p_value:.4f}`')
+                        if lb_p_value < 0.05:
+                            st.error('❌ Residuals Are Not White Noise: Autocorrelation patterns still exist in the residuals.')
+                        else:
+                            st.success('✅ Residuals Are White Noise.')
+                    # =======================================================================
                     
                     forecast_result = results.get_forecast(steps=forecast_days)
                     forecast_df = forecast_result.summary_frame(alpha=0.05)
                     
-                    # Logika kondisional juga bisa diterapkan di sini jika mau,
-                    # tapi Matplotlib sudah cukup bagus untuk semua kasus forecast.
                     st.subheader('Forecast Plot')
                     fig_fc, ax_fc = plt.subplots(figsize=(12, 6))
                     ax_fc.plot(df_train.index, df_train, label='Historical Data')

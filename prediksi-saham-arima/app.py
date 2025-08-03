@@ -128,8 +128,17 @@ else:
                         ax_fc.grid(True)
                         st.pyplot(fig_fc)
                     else:
-                        st.caption("Plotting with st.line_chart (Simplified Test)")
-                        st.line_chart(forecast_df['mean'])
+                        st.caption("Plotting with st.line_chart for interactive view.")
+                        
+                        # Gabungkan data dengan cara yang lebih aman
+                        plot_df = pd.DataFrame({
+                            'Historical': df_train,
+                            'Forecast': forecast_df['mean'],
+                            'Upper Bound': forecast_df['mean_ci_upper'],
+                            'Lower Bound': forecast_df['mean_ci_lower']
+                        })
+                        
+                        st.line_chart(plot_df)
 
                 except Exception as e:
                     st.error(f"Failed to train model: {e}")

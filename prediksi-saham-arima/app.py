@@ -95,14 +95,14 @@ else:
                         st.markdown("---")
                         param_p_values = results.pvalues.drop('const', errors='ignore')
                         if (param_p_values > 0.05).any():
-                            st.error('❌ Parameter Significance Warning...')
+                            st.error('❌ Parameter Significance Warning: One or more AR/MA parameters are not statistically significant (p-value > 0.05).')
                         else:
                             st.success('✅ Parameter Significance OK.')
                         lb_test = acorr_ljungbox(results.resid, lags=[10], return_df=True)
                         lb_p_value = lb_test['lb_pvalue'].iloc[0]
                         st.write(f'**Ljung-Box Test on Residuals:** P-value = `{lb_p_value:.4f}`')
                         if lb_p_value < 0.05:
-                            st.error('❌ Residuals Are Not White Noise...')
+                            st.error('❌ Residuals Are Not White Noise: Autocorrelation patterns still exist in the residuals.')
                         else:
                             st.success('✅ Residuals Are White Noise.')
                     
@@ -127,19 +127,13 @@ else:
                         ax_fc.grid(True)
                         st.pyplot(fig_fc)
                     else:
-                        # =======================================================================
-                        # --- MENGGANTI PLOTLY DENGAN st.line_chart UNTUK FORECAST ---
                         st.caption("Plotting with st.line_chart for interactive view.")
-                        
-                        # Gabungkan data historis dan forecast untuk plotting
                         plot_df = pd.concat([df_train.rename('Historical'), 
                                            forecast_df['mean'].rename('Forecast'),
                                            forecast_df['mean_ci_upper'].rename('Upper Bound'),
                                            forecast_df['mean_ci_lower'].rename('Lower Bound')],
                                           axis=1)
-                        
                         st.line_chart(plot_df)
-                        # =======================================================================
 
                 except Exception as e:
                     st.error(f"Failed to train model: {e}")

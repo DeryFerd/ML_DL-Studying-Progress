@@ -17,6 +17,7 @@ def load_data(ticker):
     if data.empty:
         return None
     data = data.asfreq('B').fillna(method='ffill')
+    data.ffill(inplace=True) 
     return data
 
 with st.sidebar:

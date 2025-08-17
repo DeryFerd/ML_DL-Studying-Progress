@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detektor Hoax AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <h1>Detektor Hoax AI 🤖</h1>
+    </header>
+
+    <main>
+        <div class="card">
+            <p class="subtitle">Didukung oleh Scikit-learn & FastAPI</p>
+            <p>Masukkan judul berita yang ingin Anda periksa di bawah ini.</p>
+            
+            <textarea id="newsTitle" rows="4" placeholder="Contoh: [SALAH] Pemerintah akan bagikan uang 1 Miliar..."></textarea>
+            
+            <button id="checkButton">Periksa Sekarang</button>
+            
+            <h2>Hasil Prediksi:</h2>
+            <div id="resultContainer">
+                 <p id="resultArea">--- Menunggu input ---</p>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Dibuat dengan AI</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
